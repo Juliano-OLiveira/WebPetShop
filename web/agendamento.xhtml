@@ -1,0 +1,260 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html>
+<ui:composition 
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+    xmlns:p="http://primefaces.org/ui"
+    template="WEB-INF/template/Layout.xhtml"
+    xmlns:f="http://xmlns.jcp.org/jsf/core">
+
+    <ui:define name="conteudo">
+        <h:form id="frm">
+            <p:messages id="msgs"/>
+
+            <p:toolbar id="toolbar">
+                <f:facet name="right">
+
+                    <p:commandButton icon="fa fa fa-plus"
+                                     value="Novo"
+                                     process="@this"
+                                     action="#{agendaBean.prepararSalvar()}"
+                                     update="agendamento-dialog"
+                                     onclick="PF('tabWidgetVar').select(0)"
+                                     oncomplete="PF('edicaoAgendamentoDialog').show()">
+                        <p:resetInput target="agendamento-dialog" />
+                    </p:commandButton>
+                    <p:spacer width="20px"/>
+                    <p:commandButton value="Editar" icon="fa fa fa-edit"
+                                     process="@this" update="agendamento-dialog"
+                                     onclick="PF('tabWidgetVar').select(0)"
+                                     oncomplete="PF('edicaoAgendamentoDialog').show()"
+                                     disabled="#{agendaBean.agendaSelecionada == null}">
+                        <p:resetInput target="agendamento-dialog" />
+                        <f:setPropertyActionListener value="#{agendaBean.agendaSelecionada}" 
+                                                     target="#{agendaBean.agenda}" />
+                        <f:setPropertyActionListener value="#{agendaBean.agenda.animal.proprietario}" 
+                                                     target="#{agendaBean.cliente}" />
+                        <f:setPropertyActionListener value="#{agendaBean.agenda.animal}" 
+                                                     target="#{agendaBean.animal}" />
+                    </p:commandButton>
+<p:spacer width="20px"/>
+                    <p:commandButton value="Cancelar" icon="fa fa fa-times"
+                                     process="@this"
+                                     disabled="#{agendaBean.agendaSelecionada == null}"
+                                     action="#{agendaBean.cancelarAgendamento()}"
+                                     onclick="PF('tabWidgetVar').select(0)"
+                                     update="agendamento-tabela">
+
+                        <p:confirm icon="ui-icon-alert"
+                                   header="Confirmar Cancelamento"
+                                   message="Tem Certeza que deseja cancelar o agendamento de #{agendaBean.agendaSelecionada.animal} ?"/>
+
+                        <p:resetInput target="agendamento-dialog" />
+                    </p:commandButton>
+<p:spacer width="20px"/>
+                   
+                </f:facet>  
+            </p:toolbar>
+
+            <p:dataTable value="#{agendaBean.agendas}" var="agenda" 
+                         widgetVar="tabela-Agendas"
+                         id="agendamento-tabela"
+                         emptyMessage="Nenhum agendamento localizado." 
+                         rows="10" paginator="true" 
+                         paginatorPosition="bottom" style="margin-top: 20px"
+                         selection="#{agendaBean.agendaSelecionada}"
+                         selectionMode="single"
+                         rowKey="#{agenda.id}"
+                         filteredValue="#{agendaBean.agendasFiltradas}"
+                         >
+
+                <f:facet name="header">
+
+                    <div align="left">
+                        <p:outputPanel>
+                            <h:outputText value="Pesquisar: " />
+                            <p:inputText id="globalFilter" onkeyup="PF('tabela-Agendas').filter()"
+                                         style="width:500px" placeholder="Pesquise na Tabela por: (Data, Hora, Propietário, Animal)"/>
+                        </p:outputPanel>
+                    </div>
+
+                </f:facet>
+
+                <p:ajax event="rowSelect" update=":frm:toolbar :frm:agendamento-dialog" />
+                <p:ajax event="rowUnselect" update=":frm:toolbar :frm:agendamento-dialog" />
+
+                <p:column headerText="ID">
+                    <h:outputText value="#{agenda.id}" />
+                </p:column>
+
+                <p:column headerText="Data" sortBy="#{agenda.dataDoAgendamento}" >
+                    <h:outputText value="#{agenda.dataDoAgendamento}" >
+                        <f:convertDateTime type="date" pattern="dd-MM-yyyy"/>
+                    </h:outputText>
+                </p:column>
+
+                <p:column headerText="Hora" sortBy="#{agenda.horarioDoAgendamento}" filterBy="#{agenda.dataDoAgendamento}" filterStyle="display: none">
+                    <h:outputText value="#{agenda.horarioDoAgendamento}" />
+                </p:column>
+
+                <p:column headerText="Cliente" filterBy="#{agenda.animal.proprietario.nome}" filterStyle="display: none">
+                    <h:outputText value="#{agenda.animal.proprietario.nome}" />
+                </p:column>
+
+                <p:column headerText="Animal" filterBy="#{agenda.animal}" filterStyle="display: none">
+                    <h:outputText value="#{agenda.animal}" />
+                </p:column>
+
+                <p:column headerText="Status" filterBy="#{agenda.status}" filterStyle="display: none">
+                    <h:outputText value="#{agenda.status}" />
+                </p:column>
+
+                <p:column headerText="Forma de Pagamento" filterBy="#{agenda.formaDePagamento}" filterStyle="display: none">
+                    <h:outputText value="#{agenda.formaDePagamento.descricao}" />
+                </p:column>
+
+            </p:dataTable>
+
+            <!-- DIALOG -->
+            <p:dialog header="Novo Agendamento" id="agendamento-dialog" 
+                      widgetVar="edicaoAgendamentoDialog"
+                      resizable="false" modal="true">
+                <p:messages id="msgs-dialog" />
+
+                <p:tabView style="width: 650px" widgetVar="tabWidgetVar" id="tab-View">
+
+                    <p:tab title="Agenda" id="tab-agenda">
+                        <p:panelGrid columns="2" id="panel-dialog">
+                            <p:outputLabel value="Data" for="data"/>
+                            <p:calendar id="data" value="#{agendaBean.agenda.dataDoAgendamento}" required="true"/>
+
+                            <p:outputLabel value="Hora" for="hora"/>
+                            <p:datePicker id="hora" timeOnly="true" pattern="HH:mm" value="#{agendaBean.agenda.horarioDoAgendamento}"
+                                          required="true"/>
+
+                            <p:outputLabel value="Proprietário" for="proprietario"/>
+                            <p:selectOneMenu id="proprietario" 
+                                             value="#{agendaBean.cliente}" filter="true" 
+                                             style="width: 180px"
+                                             converter="convert"
+                                             required="true">
+                                <f:selectItem itemLabel="Selecione..." noSelectionOption="true"/>
+                                <f:selectItems value="#{agendaBean.clientes}"
+                                               var="cliente"
+                                               itemLabel="#{cliente.nome}"
+                                               itemValue="#{cliente}"/>
+                                <p:ajax event="itemSelect"                                         
+                                        update="animalSpinner"/>
+                            </p:selectOneMenu>
+
+                            <p:outputLabel value="Animal" for="animalSpinner"/>
+                            <p:selectOneMenu id="animalSpinner" 
+                                             value="#{agendaBean.animal}"
+                                             filter="true" style="width: 150px"                                            
+                                             converter="convert"
+                                             required="true">
+                                <f:selectItem itemLabel="Selecione..." noSelectionOption="true"/>
+                                <f:selectItems value="#{agendaBean.animalPorProprietario(agendaBean.cliente)}"
+                                               var="animal"
+                                               itemLabel="#{animal.nome}"
+                                               itemValue="#{animal}"/>                                
+                            </p:selectOneMenu>
+
+                            <p:outputLabel value="Status" for="status"/>
+                            <p:selectOneRadio id="status" value="#{agendaBean.agenda.status}" required="true">
+                                <f:selectItem itemLabel="Em espera" itemValue="Em espera"/>
+                                <f:selectItem itemLabel="Finalizado" itemValue="Finalizado"/>
+                                <f:selectItem itemLabel="Cancelado" itemValue="Cancelado"/>
+                            </p:selectOneRadio>
+
+                            <p:outputLabel value="Forma de Pagamento" for="pagamento"/>
+                            <p:selectOneMenu id="pagamento" value="#{agendaBean.agenda.formaDePagamento}" required="true">
+                                <f:selectItem itemLabel="Selecione..."/>
+                                <f:selectItems value="#{agendaBean.formaDePagamentos}"
+                                               var="pagamento"
+                                               itemLabel="#{pagamento.descricao}"
+                                               itemValue="#{pagamento}"/>
+                            </p:selectOneMenu>
+                            <p:outputLabel/>
+
+                            <p:commandButton value="Salvar"
+                                             id="salvar-button"
+                                             action="#{agendaBean.salvarAgenda()}"
+                                             process="tab-agenda"
+                                             update="frm:agendamento-tabela"
+                                             oncomplete=""
+                                             onclick="PF('tabWidgetVar').select(1)"/>
+
+                        </p:panelGrid>
+                    </p:tab>
+
+                    <p:tab title="Serviços" disabled="#{agendaBean.destivaOptionServico()}" id="tab-servicos">                        
+                        <h:form id="frm-servico">
+                            <p:messages id="msgs-servicos"/>
+
+                            <p:panelGrid columns="2" id="panel-servicos" >
+                                <p:outputLabel value="Escolha um Serviço" for="escolha-servico"/>
+                                <p:selectOneMenu id="escolha-servico"
+                                                 value="#{agendaBean.servico}" 
+                                                 filter="true" 
+                                                 style="width: 150px"
+                                                 converter="convert">
+                                    <f:selectItem itemLabel="Selecione..." noSelectionOption="true"/>
+                                    <f:selectItems value="#{agendaBean.listaServicos}"
+                                                   var="servico"
+                                                   itemLabel="#{servico.descricao}"
+                                                   itemValue="#{servico}"/>
+
+                                    <p:ajax event="itemSelect"                                         
+                                            update="itensServico"/>
+                                </p:selectOneMenu>
+                                <p:commandButton value="Adicionar" action="#{agendaBean.adicionarItem()}"  
+                                                     process="@this"
+                                                     update="itensServico"
+                                                     style="margin-bottom: 5px">                                             
+                                    </p:commandButton>  
+                                <p:commandButton value="Remover" action="#{agendaBean.removeItem()}"  
+                                                     process="@this"
+                                                     update="itensServico"
+                                                     style="margin-bottom: 5px"
+                                                     disabled="#{agendaBean.itemServicoSelecionado == null}">                                             
+                                    </p:commandButton> 
+                            </p:panelGrid>
+
+                                        <br/><br/>
+                            <p:dataTable value="#{agendaBean.itensDaAgenda}"
+                                         emptyMessage="Nenhum serviço adicionado."
+                                         id="itensServico" 
+                                         widgetVar="Wvar"
+                                         var="servico"
+                                         paginator="false"
+                                         rowKey="#{servico.id}"
+                                         selection="#{agendaBean.itemServicoSelecionado}"
+                                         selectionMode="single">
+
+                                <p:column headerText="Serviços">
+                                    <h:outputText value="#{servico.servico.descricao}" />
+                                </p:column>
+
+                                <p:column headerText="Valor" style="text-align: center;width: 100px">
+                                    <h:outputText value="R$ #{servico.valor}"/>
+                                </p:column>
+                                <p:columnGroup type="footer">
+                                    <p:column footerText="Total" style="text-align: right"/>
+                                    <p:column footerText="R$ #{agendaBean.somarValoresServicos()}" style="text-align: center"/>
+                                </p:columnGroup>
+
+                                <p:ajax event="rowSelect" update="frm:tab-View:frm-servico"/>
+                                <p:ajax event="rowUnselect" update="frm:tab-View:frm-servico"/>
+
+                            </p:dataTable>
+
+                            
+                        </h:form>
+                    </p:tab>
+                </p:tabView>
+            </p:dialog>
+        </h:form>
+    </ui:define>
+</ui:composition>   
